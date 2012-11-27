@@ -1,0 +1,5 @@
+Changelog for Forecast.
+
+Forecast 1.0
+======================================
+Initial release.
