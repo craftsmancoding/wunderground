@@ -1,0 +1,156 @@
+.forecast-container,
+.forecast-container-3days,
+.more-forecast-container {
+	border: 1px solid #ddd;
+	padding: 5px;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	color: #8b8b8b;
+}
+
+.more-forecast-container  {
+	width: 445px;
+}
+
+.forecast-container {
+	width: 200px;
+}
+
+.forecast-container-3days {
+	border-right: none;
+	width: 150px;
+	float: left;
+}
+
+div.last {
+	border-right: 1px solid #ddd;
+}
+
+.thumb {
+	float: left;
+	border: 1px solid #DDD;
+}
+
+.forecast-info {
+	float: left;
+	margin-left: 12px;
+}
+
+.day {
+	font-size: 13px;
+	margin-bottom: 7px;
+	border-bottom: 1px solid #DDD;
+	padding-bottom: 5px;
+}
+
+.forecast-container-3days .day {
+	font-weight: bold;
+	color: #213F9A;
+	text-align: center;
+	border-bottom: 1px solid #ddd;
+	padding-bottom: 5px;
+	font-size: 11px;
+}
+
+.forecast-container-3days .thumb {
+	margin-left: 10px;
+}
+
+.temperature {
+	color: #000;
+}
+
+.forecast-container-3days .thumb img {
+	width: 30px;
+}
+
+.location {
+	font-weight: bold;
+	color: #213F9A;
+	margin-bottom: 5px;
+}
+
+
+.weather {
+	font-weight: bold;
+}
+
+#forecast_2 {
+	border-right: 1px solid #DDD;;
+}
+
+.more-forecast-header {
+	background:#395aa9;
+	padding: 5px;
+	color: #fff;
+	font-weight: bold;
+}
+
+.location-info {
+	padding-bottom: 1px;
+}
+
+.forecast-content-inner {
+	width: 100px;
+	border: 1px solid #ddd;
+	float: left;
+	padding: 5px;
+	min-height: 65px;
+	border-left: none;
+}
+
+.forecast-first {
+	border-left: 1px solid #ddd;
+}
+
+.forecast-title {
+	margin-bottom: 5px;
+	border-bottom: 1px solid #DDD;
+	padding-bottom: 5px;
+}
+
+.forecast-content-inner .thumb {
+	float: left;
+}
+.forecast-content-inner .thumb img {
+	width: 30px;
+}
+
+.forecast-weather {
+	float: left;
+	margin-left: 10px;
+	font-weight: bold;
+	color: #000;
+	font-size: 14px;
+}
+
+.forecast-temp {
+	font-weight: bold;
+	font-size: 16px;
+	text-align: center;
+	color: #92d361;
+	margin-top: 10px;
+}
+
+.visibility {
+	font-weight: bold;
+	font-size: 16px;
+	text-align: center;
+	color: #52bbe2;
+	margin-top: 10px;
+}
+
+.forecast-wind {
+	font-size: 16px;
+	font-weight: bold;
+	color: #000;
+}
+/* The Magnificent Clearfix: Updated to prevent margin-collapsing on child elements.
+   j.mp/bestclearfix */
+.clear:before, .clear:after,
+.clearfix:before, .clearfix:after { content: "\0020"; display: block; height: 0; visibility: hidden; }
+.clear:after,
+.clearfix:after { clear: both; }
+/* Fix clearfix: blueprintcss.lighthouseapp.com/projects/15318/tickets/5-extra-margin-padding-bottom-of-page */
+.clear,
+.clearfix { zoom: 1; }

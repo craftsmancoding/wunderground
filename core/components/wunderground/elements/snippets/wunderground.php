@@ -37,6 +37,9 @@
  * @param integer expire number of minutes the results last. Default: 60.  
  * @return array props: formatting array used by "forecast_conditions" chunk
  */
+ 
+$modx->regClientCSS(MODX_ASSETS_URL.'components/wunderground/forecast.css');
+ 
 // Set up our own Cache folder
 $cache_opts = array(xPDO::OPT_CACHE_KEY => 'wunderground');
 
@@ -57,61 +60,84 @@ $outerTpl['animatedradar/animatedsatellite'] = '';
  
 $city = strtolower($modx->getOption('city', $scriptProperties));
 $state = strtolower($modx->getOption('state', $scriptProperties));
-$apikey = $modx->getOption('apikey', $scriptProperties,'a1dd26f4f33cd8c6');
+$apikey = $modx->getOption('apikey', $scriptProperties, $modx->getOption('apikey'));
 $type = $modx->getOption('type', $scriptProperties, 'conditions');
 $expire = (int) $modx->getOption('expire', $scriptProperties, 60);
 
 // Check for valid &type
 if (!isset($outerTpl[$type])) {
 	$msg = $modx->lexicon('invalid_type', array('types' => implode(', ', array_keys($outerTpl))));
-	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Forecast Snippet] (page '.$modx->resource->get('id').')'. $msg);
-	return '<script type="text/javascript"> alert('.json_encode('[Forecast Snippet] '.$msg).'); </script>';
+	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $msg);
+	return '<script type="text/javascript"> alert('.json_encode('[Wunderground Snippet] '.$msg).'); </script>';
 }
 
-$tpl = $modx->getOption('tpl', $scriptProperties, 'forecast.'.$type);
+$tpl = $modx->getOption('tpl', $scriptProperties, 'wunderground.'.$type);
 $outerTpl = $modx->getOption('outerTpl', $scriptProperties, $outerTpl[$type]);
 
 if (empty($city) || empty($state) || empty($apikey)) {
-	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Forecast Snippet] (page '.$modx->resource->get('id').')'. $modx->lexicon('missing_params'));
-	return '<script type="text/javascript"> alert('.json_encode('[Forecast Snippet] '.$msg).'); </script>';
+	$msg = $modx->lexicon('missing_params');
+	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $modx->lexicon('missing_params'));
+	return '<script type="text/javascript"> alert('.json_encode('[Wunderground Snippet] '.$msg).'); </script>';
 }
 
 // Prepare the inputs
 $city = str_replace(' ', '_', $city);
+// Any additional arguments may get passed to some API methods
+unset($scriptProperties['city']);
+unset($scriptProperties['state']);
+unset($scriptProperties['apikey']);
+unset($scriptProperties['type']);
+unset($scriptProperties['expire']);
+unset($scriptProperties['tpl']);
+unset($scriptProperties['outerTpl']);
+
 
 // Do the lookup
-$url = "http://api.wunderground.com/api/$apikey/conditions/q/$state/$city.json";
-$modx->log(xPDO::LOG_LEVEL_DEBUG, '[Forecast Snippet] URL queried: '. $url);
+// TODO: the .json has to be changed for the "Layer" lookups (e.g. radar)
+$url = "http://api.wunderground.com/api/$apikey/$type/q/$state/$city.json";
+$modx->log(xPDO::LOG_LEVEL_DEBUG, '[Wunderground Snippet] URL queried: '. $url);
 
 
 $json = $modx->cacheManager->get($url, $cache_opts);
 
-// if $refresh OR if not fingerprint is not cached, then lookup the address
-if ($refresh || empty($json)) {
+// If we don't have a cached copy, query the API
+if (empty($json)) {
 
 	// Query the API
 	$json = file_get_contents($url);
 
 	// Cache the lookup
-	$modx->cacheManager->set($url, $json, $expire, $cache_opts);
+	//$modx->cacheManager->set($url, $json, $expire, $cache_opts);
 }
 
 $data = json_decode($json,true);
+
+// Were there errors querying the service?
+if (isset($data['error'])) {
+	$error_info = array();
+	if(isset($data['error']['type'])) {
+		$error_info['type'] = $data['error']['type'];
+	}
+	if(isset($data['error']['description'])) {
+		$error_info['description'] = $data['error']['description'];
+	}
+	$msg = $modx->lexicon('service_error', $error_info);
+	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $msg);
+	
+	return $modx->getChunk('wunderground.error', array('msg'=>$msg));
+}
 
 // &type-specific behavior
 $props = array();
 $output = array();
 
 switch ($type) {
+	case 'almanac':
+	case 'astronomy':
 	case 'conditions':
 		break;
 	case 'forecast':
-		break;
 	case 'forecast10day':
-		break;
-	case 'almanac':
-		break;
-	case 'astronomy':
 		break;
 	case 'webcams':
 		break;
@@ -127,11 +153,17 @@ switch ($type) {
 		break;
 }
 
-$props = $data['current_observation'];
-//return print_r($props,true);
+// $props = $data['current_observation'];
+// return print_r($props,true);
 // $modx->toPlaceholders($props,$prefix); // optional?
 
-$output['content'] = $modx->getChunk($tpl, $props);
+$output['content'] = $modx->getChunk($tpl, $data);
+
+if (!$output['content']) {
+	$msg = $modx->lexicon('missing_chunk', array('tpl'=>$tpl));
+	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $msg);
+	return $modx->getChunk('wunderground.error', array('msg'=>$msg));
+}
 
 // Optionally wrap the output.
 if (empty($outerTpl)) {

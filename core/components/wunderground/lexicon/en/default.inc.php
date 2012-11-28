@@ -33,6 +33,8 @@ $_lang['Forecast_desc'] = 'Implementation of the Wunderground.com API';
 // Errors
 $_lang['missing_params'] = '&city, &state, and a valid &apikey are required.';
 $_lang['invalid_type'] = 'Invalid &type parameter.  &type can be one of the following: [[+types]]';
+$_lang['service_error'] = 'An error with the wunderground.com service was encountered. [[+type]]: [[+description]]';
+$_lang['missing_chunk'] = 'Chunk not found: [[+tpl]]';
 
 // System Settings
 $_lang['setting_forecast.apikey'] = 'Wunderground API Key';
