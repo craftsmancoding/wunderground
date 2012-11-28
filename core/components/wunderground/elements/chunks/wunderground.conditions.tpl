@@ -1,5 +1,5 @@
 <div class="forecast-container clearfix">
-	<div class="day">Today</div>
+	<div class="day">[[%today? &namespace=`wunderground`]]</div>
 	<div class="thumb">
 		<img src="[[+current_observation.icon_url]]" alt="">
 	</div>

@@ -2,99 +2,75 @@
 /**
  * Wunderground
  * 
- * Gets a weather forecast of type &type from Wunderground.com's API. 
- *
- * Types:
- * The following types of queries are supported:
- *
- * 	conditions - current temperature, weather condition, humidity, wind, feels 
- *				like temperature, barometric pressure, and visibility.
- *	forecast -	summary of the weather for the next 3 days. This includes high 
- *				and low temperatures, a string text forecast and the conditions.
- *	forecast10day - as for "forecast", but for 10 days.
- *	almanac - Historical average temperature for today.
- *	astronomy - Returns the moon phase, sunrise and sunset times.
- *	webcams - Returns locations of nearby Personal Weather Stations and URLs for images from their web cams.
- *	radar - Returns a static radar image for a given location.
- *  animatedradar - Returns an animated radar image for a given location.
- *	satellite - Returns a URL link to .gif visual and infrared satellite images.
- *	animatedsatellite - Returns animated visual and infrared satellite images.
- * 	radar/satellite - 
- *	animatedradar/animatedsatellite
+ * Gets a weather forecast or related data from Wunderground.com's API.
+ * 
  *	
  * Formatting:
  * The default formatting chunks rely on the &type parameter and follow
- * the following naming pattern: wunderground.{$type}
+ * the following naming pattern: wunderground.{$features}
  * 
- *
- * @param string city: name of a city
- * @param string state: 2 letter abbreviation of a US state
+ * @param string query Requred: usually a state/City or country/city
  * @param string apikey: api key from wunderground.com. Defaults to wunderground.apikey System Setting.
- * @param string tpl Chunk used to format results. Default value depends on &type: wunderground.{$type}
- * @param string outerTpl Chunk used to wrap results. Some types of lookups do not use an outerTpl wrapper,
- *		others will use a Chunk named after the &type, e.g. wunderground.{$type}.outer. See docs for details.
- * // @param string prefix used when setting placeholders. Does not affect placeholders in chunks.
+ * @param string tpl Chunk used to format results. Default value depends on &features: wunderground.{$features}
  * @param integer expire number of minutes the results last. Default: 60.  
+ * @param boolean help -- if set, the output will be a list of available placeholders for the call.
  * @return array props: formatting array used by "forecast_conditions" chunk
  */
  
-$modx->regClientCSS(MODX_ASSETS_URL.'components/wunderground/forecast.css');
+$modx->regClientCSS(MODX_ASSETS_URL.'components/wunderground/css/forecast.css');
+$modx->regClientStartupScript('https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js');
+$modx->regClientStartupScript(MODX_ASSETS_URL.'components/wunderground/js/cycle.js');
  
 // Set up our own Cache folder
 $cache_opts = array(xPDO::OPT_CACHE_KEY => 'wunderground');
 
-// Sets optional outerTpls used to wrap output
-$outerTpl = array();
-$outerTpl['conditions'] = '';
-$outerTpl['forecast'] = '';
-$outerTpl['forecast10day'] = '';
-$outerTpl['almanac'] = '';
-$outerTpl['astronomy'] = '';
-$outerTpl['webcams'] = '';
-$outerTpl['radar'] = '';
-$outerTpl['animatedradar'] = '';
-$outerTpl['satellite'] = '';
-$outerTpl['animatedsatellite'] = '';
-$outerTpl['animatedradar/animatedsatellite'] = '';
-
+// Used to validate &features input
+$valid_features = array('almanac','astronomy','conditions','forecast','forecast10day','webcams',
+'radar','satellite','animatedradar','animatedsatellite');
+$layer_features = array('radar','satellite','animatedradar','animatedsatellite');
  
-$city = strtolower($modx->getOption('city', $scriptProperties));
-$state = strtolower($modx->getOption('state', $scriptProperties));
+$query = $modx->getOption('query', $scriptProperties);
 $apikey = $modx->getOption('apikey', $scriptProperties, $modx->getOption('apikey'));
-$type = $modx->getOption('type', $scriptProperties, 'conditions');
+$features = $modx->getOption('features', $scriptProperties, 'conditions');
 $expire = (int) $modx->getOption('expire', $scriptProperties, 60);
+$help = (int) $modx->getOption('help', $scriptProperties);
 
-// Check for valid &type
-if (!isset($outerTpl[$type])) {
-	$msg = $modx->lexicon('invalid_type', array('types' => implode(', ', array_keys($outerTpl))));
-	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $msg);
-	return '<script type="text/javascript"> alert('.json_encode('[Wunderground Snippet] '.$msg).'); </script>';
+// Check for valid &features
+$requested_features = explode('/',$features);
+foreach($requested_features as $f) {
+	if (!in_array($f, $valid_features)) {
+		$msg = $modx->lexicon('invalid_type', array('types' => implode(', ',$valid_features)));
+		$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $msg);
+		return '<script type="text/javascript"> alert('.json_encode('[Wunderground Snippet] '.$msg).'); </script>';
+	}
 }
+sort($requested_features);
+$features = implode('/',$requested_features);
 
-$tpl = $modx->getOption('tpl', $scriptProperties, 'wunderground.'.$type);
-$outerTpl = $modx->getOption('outerTpl', $scriptProperties, $outerTpl[$type]);
+$tpl = $modx->getOption('tpl', $scriptProperties, 'wunderground.'.$features);
 
-if (empty($city) || empty($state) || empty($apikey)) {
+if (empty($query) || empty($apikey)) {
 	$msg = $modx->lexicon('missing_params');
 	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $modx->lexicon('missing_params'));
 	return '<script type="text/javascript"> alert('.json_encode('[Wunderground Snippet] '.$msg).'); </script>';
 }
 
 // Prepare the inputs
-$city = str_replace(' ', '_', $city);
-// Any additional arguments may get passed to some API methods
+$query = strtolower(str_replace(' ', '_', $query));
+
+// Any additional arguments may get passed to some of the "Layer" API methods
 unset($scriptProperties['city']);
 unset($scriptProperties['state']);
 unset($scriptProperties['apikey']);
 unset($scriptProperties['type']);
 unset($scriptProperties['expire']);
 unset($scriptProperties['tpl']);
-unset($scriptProperties['outerTpl']);
+unset($scriptProperties['help']);
 
 
 // Do the lookup
 // TODO: the .json has to be changed for the "Layer" lookups (e.g. radar)
-$url = "http://api.wunderground.com/api/$apikey/$type/q/$state/$city.json";
+$url = "http://api.wunderground.com/api/$apikey/$features/q/$query.json";
 $modx->log(xPDO::LOG_LEVEL_DEBUG, '[Wunderground Snippet] URL queried: '. $url);
 
 
@@ -127,25 +103,29 @@ if (isset($data['error'])) {
 	return $modx->getChunk('wunderground.error', array('msg'=>$msg));
 }
 
-// &type-specific behavior
-$props = array();
-$output = array();
+// &feature-specific behavior
+$output = '';
 
-switch ($type) {
+switch ($features) {
 	case 'almanac':
 	case 'astronomy':
 	case 'conditions':
-		$output['content'] = $modx->getChunk($tpl, $data);
+		$output = $modx->getChunk($tpl, $data);
 		break;
 	case 'forecast':
-	case 'forecast10day':
-		//return print_r($data['forecast']['simpleforecast']['forecastday'],true);
-		$output['content'] = '';
 		foreach($data['forecast']['simpleforecast']['forecastday'] as $d) {
-			$output['content'] .= $modx->getChunk($tpl, $d);
+			$output .= $modx->getChunk($tpl, $d);
+		}
+		break;
+	case 'forecast10day':
+		foreach($data['forecast']['txt_forecast']['forecastday'] as $d) {
+			$output .= $modx->getChunk($tpl, $d);
 		}
 		break;
 	case 'webcams':
+		foreach($data['webcams'] as $d) {
+			$output .= $modx->getChunk($tpl, $d);
+		}
 		break;
 	case 'radar':
 		break;
@@ -155,28 +135,30 @@ switch ($type) {
 		break;
 	case 'animatedsatellite':
 		break;
-	case 'animatedradar/animatedsatellite';
-		break;
 }
 
-// $props = $data['current_observation'];
-// return print_r($props,true);
-// $modx->toPlaceholders($props,$prefix); // optional?
+// For debugging+developers
+$modx->toPlaceholder('wunderground.json',$json);
+$modx->toPlaceholder('wunderground.data',print_r($data,true));
 
-//return print_r($output,true);
+// Show Help Message if &help=`1` (overrides output)
+if ($help) {
+	$placeholders_array = $modx->toPlaceholders($data);
+	$placeholders = '';
+	foreach($placeholders_array['keys'] as $p) {
+		$placeholders .= "&#91;&#91;+$p&#93;&#93;<br />";
+	}
+	$output = $modx->getChunk('wunderground.help', array('placeholders'=>$placeholders));
+}
 
-if (empty($output['content'])) {
+// Show error message if the Chunk was not found.
+if (empty($output)) {
 	$msg = $modx->lexicon('missing_chunk', array('tpl'=>$tpl));
 	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $msg);
 	return $modx->getChunk('wunderground.error', array('msg'=>$msg));
 }
 
-// Optionally wrap the output.
-if (empty($outerTpl)) {
-	return $output['content'];
-}
-else {
-	return $modx->getChunk($outerTpl, $output);
-}
+
+return $output;
 
 /*EOF*/
