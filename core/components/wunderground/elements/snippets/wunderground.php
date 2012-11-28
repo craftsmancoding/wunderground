@@ -46,8 +46,8 @@ $cache_opts = array(xPDO::OPT_CACHE_KEY => 'wunderground');
 // Sets optional outerTpls used to wrap output
 $outerTpl = array();
 $outerTpl['conditions'] = '';
-$outerTpl['forecast'] = 'wunderground.forecast.outer';
-$outerTpl['forecast10day'] = 'wunderground.forecast10day.outer';
+$outerTpl['forecast'] = '';
+$outerTpl['forecast10day'] = '';
 $outerTpl['almanac'] = '';
 $outerTpl['astronomy'] = '';
 $outerTpl['webcams'] = '';
@@ -135,9 +135,15 @@ switch ($type) {
 	case 'almanac':
 	case 'astronomy':
 	case 'conditions':
+		$output['content'] = $modx->getChunk($tpl, $data);
 		break;
 	case 'forecast':
 	case 'forecast10day':
+		//return print_r($data['forecast']['simpleforecast']['forecastday'],true);
+		$output['content'] = '';
+		foreach($data['forecast']['simpleforecast']['forecastday'] as $d) {
+			$output['content'] .= $modx->getChunk($tpl, $d);
+		}
 		break;
 	case 'webcams':
 		break;
@@ -157,9 +163,9 @@ switch ($type) {
 // return print_r($props,true);
 // $modx->toPlaceholders($props,$prefix); // optional?
 
-$output['content'] = $modx->getChunk($tpl, $data);
+//return print_r($output,true);
 
-if (!$output['content']) {
+if (empty($output['content'])) {
 	$msg = $modx->lexicon('missing_chunk', array('tpl'=>$tpl));
 	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $msg);
 	return $modx->getChunk('wunderground.error', array('msg'=>$msg));
