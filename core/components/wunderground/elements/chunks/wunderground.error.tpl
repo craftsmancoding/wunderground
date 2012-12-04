@@ -1,1 +1,1 @@
-[[+msg]]
+<div class="error">[[+description]]</div>

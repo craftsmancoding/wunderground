@@ -1,6 +1,11 @@
 .forecast-container,
 .forecast-container-3days,
-.more-forecast-container {
+.more-forecast-container,
+.forecast-container-10days,
+.almanac,
+.astronomy,
+.webcams,
+.help-wrapper {
 	border: 1px solid #ddd;
 	padding: 5px;
 	font-family: Arial, Helvetica, sans-serif;
@@ -8,8 +13,51 @@
 	color: #8b8b8b;
 }
 
+
+
+
+.almanac thead {
+	background: #DDD;
+	text-align: left;
+}
+
+.almanac thead th {
+	padding: 5px 20px;
+}
+
+
+.record {
+	color: #000;
+}
+
 .more-forecast-container  {
 	width: 445px;
+}
+
+.forecast-container-10days {
+	width: 335px;
+	border-bottom: none;
+}
+
+
+
+.forecast-container-10days:last-child {
+	border-bottom: 1px solid #ddd;
+}
+.forecast-container-10days .day {
+	border-bottom: none;
+	color: black;
+	font-weight: bold;
+	padding-bottom: 0px;
+}
+
+.forecast-container-10days .thumb img {
+	width: 35px;
+}
+
+.forecast-container-10days .forecast-info {
+	width: 285px;
+	font-size: 11px;
 }
 
 .forecast-container {
@@ -22,7 +70,7 @@
 	float: left;
 }
 
-div.last {
+.forecast-container-3days:last-child {
 	border-right: 1px solid #ddd;
 }
 
@@ -75,9 +123,7 @@ div.last {
 	font-weight: bold;
 }
 
-#forecast_2 {
-	border-right: 1px solid #DDD;;
-}
+
 
 .more-forecast-header {
 	background:#395aa9;
@@ -145,6 +191,106 @@ div.last {
 	font-weight: bold;
 	color: #000;
 }
+
+/**Astronomy**/
+.astronomy {
+	width: 170px;
+}
+
+
+
+.sunrise {
+	margin-bottom: 4px;
+}
+.rise {
+	padding: 0px 10px;
+	background: #eec51d;
+	border-top-left-radius: 10px;
+	border-top-right-radius: 10px;
+	margin-right: 10px;
+}
+
+.set {
+	padding: 0px 10px;
+	background: #f7921e;
+	border-bottom-left-radius: 10px;
+	border-bottom-right-radius: 10px;
+	margin-right: 10px;
+}
+
+.astro-title {
+	border-bottom: 1px solid #DDD;
+	margin-bottom: 5px;
+	padding-bottom: 5px;
+}
+
+.moon .astro-info img {
+	width: 35px;
+}
+
+.astronomy .sun,
+.astronomy .moon {
+	float: left;
+	width: 75px;
+	margin-right: 10px;
+}
+
+/**Webcams**/
+.webcams {
+	width: 180px;
+	min-height: 185px;
+}
+
+.slide-img {
+	width: 175px;
+}
+
+.slide-nav {
+	margin-bottom: 10px;
+}
+
+.slide-nav a {
+	color: #000;
+}
+
+#slideshow a {
+	text-decoration: none;
+}
+.location-webcam {
+	text-align: center;
+	margin-top: 10px;
+	color: #8b8b8b;
+}
+
+.help-wrapper {
+	font-size: 9px;
+	margin: 0 auto;
+	width: 600px;
+}
+
+pre {
+		height: auto;
+        white-space: pre-wrap;
+        white-space: -moz-pre-wrap;
+        white-space: -pre-wrap;
+        white-space: -o-pre-wrap;
+        word-wrap: break-word;
+        padding:15px;
+        background: #fdffdd;
+}
+
+
+.error {
+	background: #ffd9da;
+	padding: 5px;
+	border: 1px solid #a80004;
+	color: #a80004;
+	margin: 10px;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+
+}
+
 /* The Magnificent Clearfix: Updated to prevent margin-collapsing on child elements.
    j.mp/bestclearfix */
 .clear:before, .clear:after,

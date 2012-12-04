@@ -2,32 +2,32 @@
 /**
  * Wunderground
  * 
- * Gets a weather forecast or related data from Wunderground.com's API.
- * 
+ * Gets a weather forecast of type &type from Wunderground.com's API. 
+ *
  *	
  * Formatting:
  * The default formatting chunks rely on the &type parameter and follow
  * the following naming pattern: wunderground.{$features}
  * 
- * @param string query Requred: usually a state/City or country/city
+ *
+ * @param string city: name of a city
+ * @param string state: 2 letter abbreviation of a US state
  * @param string apikey: api key from wunderground.com. Defaults to wunderground.apikey System Setting.
- * @param string tpl Chunk used to format results. Default value depends on &features: wunderground.{$features}
+ * @param string tpl Chunk used to format results. Default value depends on &type: wunderground.{$features}
  * @param integer expire number of minutes the results last. Default: 60.  
  * @param boolean help -- if set, the output will be a list of available placeholders for the call.
  * @return array props: formatting array used by "forecast_conditions" chunk
  */
  
 $modx->regClientCSS(MODX_ASSETS_URL.'components/wunderground/css/forecast.css');
-$modx->regClientStartupScript('https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js');
-$modx->regClientStartupScript(MODX_ASSETS_URL.'components/wunderground/js/cycle.js');
  
 // Set up our own Cache folder
 $cache_opts = array(xPDO::OPT_CACHE_KEY => 'wunderground');
 
-// Used to validate &features input
+// Sets optional outerTpls used to wrap output
 $valid_features = array('almanac','astronomy','conditions','forecast','forecast10day','webcams',
 'radar','satellite','animatedradar','animatedsatellite');
-$layer_features = array('radar','satellite','animatedradar','animatedsatellite');
+
  
 $query = $modx->getOption('query', $scriptProperties);
 $apikey = $modx->getOption('apikey', $scriptProperties, $modx->getOption('apikey'));
@@ -48,6 +48,7 @@ sort($requested_features);
 $features = implode('/',$requested_features);
 
 $tpl = $modx->getOption('tpl', $scriptProperties, 'wunderground.'.$features);
+
 
 if (empty($query) || empty($apikey)) {
 	$msg = $modx->lexicon('missing_params');
@@ -89,18 +90,19 @@ if (empty($json)) {
 $data = json_decode($json,true);
 
 // Were there errors querying the service?
-if (isset($data['error'])) {
+if (isset($data['response']['error'])) {
 	$error_info = array();
-	if(isset($data['error']['type'])) {
+	if(isset($data['response']['error']['type'])) {
 		$error_info['type'] = $data['error']['type'];
 	}
-	if(isset($data['error']['description'])) {
-		$error_info['description'] = $data['error']['description'];
+	if(isset($data['response']['error']['description'])) {
+		$error_info['description'] = $data['response']['error']['description'];
 	}
-	$msg = $modx->lexicon('service_error', $error_info);
+	//$msg = $modx->lexicon('service_error', $error_info);
+
 	$modx->log(xPDO::LOG_LEVEL_ERROR, '[Wunderground Snippet] (page '.$modx->resource->get('id').')'. $msg);
 	
-	return $modx->getChunk('wunderground.error', array('msg'=>$msg));
+	return $modx->getChunk('wunderground.error', $error_info);
 }
 
 // &feature-specific behavior
@@ -123,8 +125,18 @@ switch ($features) {
 		}
 		break;
 	case 'webcams':
+		$modx->regClientStartupScript('https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js');
+		$modx->regClientStartupScript(MODX_ASSETS_URL.'components/wunderground/js/cycle.js');
+		$output['content'] = '';
 		foreach($data['webcams'] as $d) {
-			$output .= $modx->getChunk($tpl, $d);
+			$output['content'] .= $modx->getChunk($tpl, $d);
+		}
+		// Optionally wrap the output.
+		if (empty($outerTpl)) {
+			return $output;
+		}
+		else {
+			return $modx->getChunk($outerTpl, $output);
 		}
 		break;
 	case 'radar':
@@ -150,6 +162,7 @@ if ($help) {
 	}
 	$output = $modx->getChunk('wunderground.help', array('placeholders'=>$placeholders));
 }
+
 
 // Show error message if the Chunk was not found.
 if (empty($output)) {
